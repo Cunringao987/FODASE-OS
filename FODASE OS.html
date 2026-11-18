@@ -1,0 +1,537 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#050807">
+<title>FODASE OS</title>
+
+<style>
+:root {
+  --green: #00ff88;
+  --bg: #050807;
+  --panel: rgba(5,15,12,.94);
+  --border: rgba(0,255,136,.3);
+  --text: #d7ffe9;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  height:100dvh;
+  overflow:hidden;
+  background:var(--bg);
+  color:var(--text);
+  font-family:Consolas,monospace;
+}
+button {
+  background:#0b1912;
+  color:var(--green);
+  border:1px solid var(--border);
+  padding:9px 13px;
+  cursor:pointer;
+  font-family:inherit;
+  border-radius:5px;
+}
+button:hover {background:#123322}
+#boot {
+  position:fixed; inset:0; z-index:10000;
+  background:#000;
+  padding:30px;
+  color:var(--green);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+#boot pre {white-space:pre-wrap;font-size:13px}
+#desktop {
+  height:100dvh;
+  position:relative;
+  background:
+    radial-gradient(ellipse at 50% 45%,#103324 0%,#07120d 45%,#020403 100%);
+  overflow:hidden;
+}
+#desktop:before {
+  content:"";
+  position:absolute;inset:0;
+  pointer-events:none;
+  opacity:.12;
+  background-image:linear-gradient(rgba(0,255,136,.15) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,255,136,.15) 1px,transparent 1px);
+  background-size:35px 35px;
+}
+.brand {
+  position:absolute;
+  top:40%;width:100%;
+  text-align:center;
+  font-size:clamp(35px,10vw,85px);
+  font-weight:bold;
+  color:rgba(0,255,136,.12);
+  letter-spacing:8px;
+  pointer-events:none;
+}
+.brand small {
+  display:block;font-size:12px;letter-spacing:6px;
+}
+#icons {
+  position:absolute;top:15px;left:12px;
+  display:grid;gap:12px;
+}
+.desktop-icon {
+  width:75px;
+  text-align:center;
+  font-size:12px;
+  cursor:pointer;
+  padding:7px 3px;
+  border-radius:6px;
+}
+.desktop-icon:hover {background:#00ff881c}
+.desktop-icon span {
+  display:block;font-size:29px;margin-bottom:5px;
+}
+#taskbar {
+  position:absolute;bottom:0;left:0;right:0;
+  height:54px;
+  background:rgba(0,8,5,.94);
+  border-top:1px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 10px;gap:9px;
+  z-index:5000;
+  backdrop-filter:blur(12px);
+}
+#clock {margin-left:auto;font-size:12px}
+#startMenu {
+  display:none;
+  position:absolute;bottom:60px;left:8px;
+  width:min(300px,90vw);
+  padding:15px;
+  background:var(--panel);
+  border:1px solid var(--green);
+  border-radius:9px;
+  z-index:6000;
+  box-shadow:0 0 30px #00ff8830;
+}
+#startMenu button {
+  width:100%;text-align:left;margin:4px 0;
+}
+.window {
+  position:absolute;
+  width:min(550px,94vw);
+  height:min(410px,75dvh);
+  top:12%;left:50%;
+  transform:translateX(-50%);
+  background:var(--panel);
+  border:1px solid var(--green);
+  border-radius:8px;
+  box-shadow:0 0 25px #00ff8822;
+  overflow:hidden;
+  z-index:100;
+  display:flex;
+  flex-direction:column;
+}
+.titlebar {
+  background:#10251a;
+  padding:11px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  cursor:move;
+  user-select:none;
+  border-bottom:1px solid var(--border);
+}
+.titlebar button {padding:3px 9px}
+.window-content {
+  padding:14px;
+  overflow:auto;
+  flex:1;
+}
+.terminal-output {
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+  line-height:1.55;
+  font-size:13px;
+}
+.terminal-input {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin-top:10px;
+}
+.terminal-input input {
+  min-width:0;flex:1;
+  background:transparent;
+  color:var(--green);
+  border:0;outline:0;
+  font:inherit;
+}
+.file {
+  padding:12px;
+  border-bottom:1px solid var(--border);
+}
+#notification {
+  position:absolute;
+  bottom:65px;right:12px;
+  padding:12px;
+  background:#10251a;
+  border:1px solid var(--green);
+  border-radius:6px;
+  display:none;
+  z-index:9000;
+}
+@media(max-width:600px) {
+  .window {top:7%;height:75dvh}
+  #taskbar {height:52px}
+}
+</style>
+</head>
+
+<body>
+
+<div id="boot">
+  <pre id="bootText"></pre>
+</div>
+
+<div id="desktop" style="display:none">
+
+  <div class="brand">
+    FODASE OS
+    <small>UNAUTHORIZED SYSTEM OF CHAOS</small>
+  </div>
+
+  <div id="icons">
+    <div class="desktop-icon" onclick="openApp('terminal')">
+      <span>⌨️</span>Terminal
+    </div>
+    <div class="desktop-icon" onclick="openApp('files')">
+      <span>📁</span>Arquivos
+    </div>
+    <div class="desktop-icon" onclick="openApp('settings')">
+      <span>⚙️</span>Configurações
+    </div>
+    <div class="desktop-icon" onclick="openApp('about')">
+      <span>💀</span>Sobre
+    </div>
+  </div>
+
+  <div id="startMenu">
+    <h3 style="color:var(--green)">💀 FODASE OS</h3>
+    <p style="font-size:11px;color:#8aaa98">SYSTEM APPLICATIONS</p>
+    <button onclick="openApp('terminal');toggleStart()">⌨ Terminal</button>
+    <button onclick="openApp('files');toggleStart()">📁 Arquivos</button>
+    <button onclick="openApp('settings');toggleStart()">⚙ Configurações</button>
+    <button onclick="openApp('about');toggleStart()">💀 Sobre o sistema</button>
+    <button onclick="reboot()">↻ Reiniciar sistema</button>
+  </div>
+
+  <div id="taskbar">
+    <button onclick="toggleStart()">💀 MENU</button>
+    <button onclick="openApp('terminal')">⌨</button>
+    <button onclick="openApp('files')">📁</button>
+    <div id="clock"></div>
+  </div>
+
+  <div id="notification"></div>
+</div>
+
+<script>
+const desktop = document.getElementById("desktop");
+const boot = document.getElementById("boot");
+const bootText = document.getElementById("bootText");
+
+const bootLines = [
+"FODASE BIOS v1.0",
+"Initializing virtual hardware...",
+"Loading kernel modules...",
+"Mounting virtual filesystem...",
+"Starting graphical interface...",
+"Loading FODASE services...",
+"Checking system integrity...",
+"Welcome to FODASE OS."
+];
+
+let line = 0;
+
+function bootSystem() {
+  boot.style.display = "flex";
+  desktop.style.display = "none";
+  bootText.textContent = "";
+
+  let timer = setInterval(() => {
+    if(line >= bootLines.length) {
+      clearInterval(timer);
+      line = 0;
+      setTimeout(() => {
+        boot.style.display = "none";
+        desktop.style.display = "block";
+        notify("FODASE OS inicializado com sucesso.");
+      },500);
+      return;
+    }
+    bootText.textContent += "> " + bootLines[line] + "\n";
+    line++;
+  },350);
+}
+bootSystem();
+
+function toggleStart() {
+  const menu = document.getElementById("startMenu");
+  menu.style.display = menu.style.display === "block" ? "none" : "block";
+}
+
+function notify(message) {
+  const n = document.getElementById("notification");
+  n.textContent = message;
+  n.style.display = "block";
+  clearTimeout(window.noticeTimer);
+  window.noticeTimer = setTimeout(() => n.style.display="none",2500);
+}
+
+function updateClock() {
+  document.getElementById("clock").textContent =
+    new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+}
+setInterval(updateClock,1000);
+updateClock();
+
+let topZ = 100;
+
+function openApp(app) {
+  const old = document.getElementById("win-"+app);
+  if(old) {
+    old.style.display = "flex";
+    old.style.zIndex = ++topZ;
+    return;
+  }
+
+  const win = document.createElement("div");
+  win.className = "window";
+  win.id = "win-"+app;
+  win.style.zIndex = ++topZ;
+
+  let title = "";
+  let content = "";
+
+  if(app === "terminal") {
+    title = "FODASE TERMINAL";
+    content = `
+      <div id="terminalOutput" class="terminal-output">
+FODASE OS [Version 1.0]
+Digite 'help' para ver os comandos disponíveis.
+
+      </div>
+      <div class="terminal-input">
+        <span style="color:var(--green)">root@fodase:~#</span>
+        <input id="terminalInput" autocomplete="off" spellcheck="false">
+      </div>`;
+  }
+
+  if(app === "files") {
+    title = "FILE EXPLORER";
+    content = `
+      <h3>📁 FODASE FILE SYSTEM</h3>
+      <div class="file">📁 /system — Arquivos do sistema virtual</div>
+      <div class="file">📁 /home — Diretório do usuário</div>
+      <div class="file">📁 /downloads — Downloads simulados</div>
+      <div class="file">📁 /apps — Aplicativos internos</div>
+      <p style="color:#8aaa98;font-size:12px">
+      Este é um explorador virtual. Ainda não acessa os arquivos reais do Android.
+      </p>`;
+  }
+
+  if(app === "settings") {
+    title = "SYSTEM SETTINGS";
+    content = `
+      <h3>⚙ CONFIGURAÇÕES</h3>
+      <p>Tema do sistema</p>
+      <button onclick="setTheme('green')">Verde Matrix</button>
+      <button onclick="setTheme('red')">Vermelho</button>
+      <button onclick="setTheme('blue')">Azul</button>
+      <hr style="border-color:var(--border)">
+      <p>Informações</p>
+      <p>Versão: 1.0.0</p>
+      <p>Kernel: FODASE Virtual Kernel</p>
+      <p>Ambiente: Browser Desktop</p>`;
+  }
+
+  if(app === "about") {
+    title = "ABOUT FODASE OS";
+    content = `
+      <h1 style="color:var(--green)">💀 FODASE OS</h1>
+      <h3>UNAUTHORIZED SYSTEM OF CHAOS</h3>
+      <p>Um sistema virtual criado do zero.</p>
+      <p>Desenvolvedor: Cunringao987</p>
+      <p>Build: 2026.11.17</p>
+      <p>Status: ONLINE</p>
+      <p>Made with HTML, CSS & JavaScript.</p>`;
+  }
+
+  win.innerHTML = `
+    <div class="titlebar">
+      <strong>${title}</strong>
+      <div>
+        <button onclick="minimizeApp('${app}')">_</button>
+        <button onclick="closeApp('${app}')">×</button>
+      </div>
+    </div>
+    <div class="window-content">${content}</div>`;
+
+  desktop.appendChild(win);
+  makeDraggable(win);
+
+  if(app === "terminal") {
+    const input = document.getElementById("terminalInput");
+    input.focus();
+    input.addEventListener("keydown",e => {
+      if(e.key === "Enter") {
+        runCommand(input.value);
+        input.value = "";
+      }
+    });
+  }
+}
+
+function closeApp(app) {
+  document.getElementById("win-"+app)?.remove();
+}
+
+function minimizeApp(app) {
+  const win = document.getElementById("win-"+app);
+  if(win) win.style.display = "none";
+}
+
+function makeDraggable(win) {
+  const bar = win.querySelector(".titlebar");
+  let dragging = false, dx=0, dy=0;
+
+  bar.addEventListener("pointerdown",e => {
+    if(e.target.tagName === "BUTTON") return;
+    dragging = true;
+    dx = e.clientX-win.offsetLeft;
+    dy = e.clientY-win.offsetTop;
+    win.style.transform = "none";
+    win.style.zIndex = ++topZ;
+    bar.setPointerCapture(e.pointerId);
+  });
+
+  bar.addEventListener("pointermove",e => {
+    if(!dragging) return;
+    win.style.left = Math.max(0,Math.min(
+      innerWidth-win.offsetWidth,e.clientX-dx))+"px";
+    win.style.top = Math.max(0,Math.min(
+      innerHeight-win.offsetHeight-55,e.clientY-dy))+"px";
+  });
+
+  bar.addEventListener("pointerup",()=>dragging=false);
+  bar.addEventListener("pointercancel",()=>dragging=false);
+}
+
+function runCommand(raw) {
+  const output = document.getElementById("terminalOutput");
+  const cmd = raw.trim();
+  if(!cmd) return;
+
+  output.textContent += "\nroot@fodase:~# "+cmd+"\n";
+
+  const parts = cmd.split(" ");
+  const name = parts[0].toLowerCase();
+  const arg = parts.slice(1).join(" ");
+
+  switch(name) {
+    case "help":
+      output.textContent +=
+`COMANDOS DISPONÍVEIS:
+help       - Lista comandos
+clear      - Limpa o terminal
+whoami     - Usuário atual
+date       - Data e hora
+uname      - Informações do sistema
+neofetch   - Resumo do sistema
+ls         - Lista diretórios virtuais
+echo       - Exibe uma mensagem
+open       - Abre um aplicativo
+reboot     - Reinicia o sistema
+exit       - Fecha o terminal`;
+      break;
+
+    case "clear":
+      output.textContent = "";
+      break;
+
+    case "whoami":
+      output.textContent += "fodase-user";
+      break;
+
+    case "date":
+      output.textContent += new Date().toString();
+      break;
+
+    case "uname":
+      output.textContent += "FODASE OS Virtual Kernel 1.0";
+      break;
+
+    case "neofetch":
+      output.textContent +=
+`
+   ████████╗
+   ██╔═════╝    FODASE OS
+   ███████╗     SYSTEM ONLINE
+   ╚════██║     KERNEL 1.0
+   ███████║     USER: FODASE
+   ╚══════╝     STATUS: READY`;
+      break;
+
+    case "ls":
+      output.textContent += "system  home  downloads  apps";
+      break;
+
+    case "echo":
+      output.textContent += arg;
+      break;
+
+    case "open":
+      if(["terminal","files","settings","about"].includes(arg)) {
+        openApp(arg);
+        output.textContent += "Aplicativo aberto: "+arg;
+      } else {
+        output.textContent += "Aplicativo não encontrado.";
+      }
+      break;
+
+    case "reboot":
+      reboot();
+      break;
+
+    case "exit":
+      closeApp("terminal");
+      return;
+
+    default:
+      output.textContent += "Comando desconhecido: "+name;
+  }
+
+  output.scrollTop = output.scrollHeight;
+}
+
+function setTheme(theme) {
+  const themes = {
+    green:["#00ff88","#050807"],
+    red:["#ff3344","#100404"],
+    blue:["#00bfff","#030912"]
+  };
+  document.documentElement.style.setProperty("--green",themes[theme][0]);
+  document.documentElement.style.setProperty("--bg",themes[theme][1]);
+  localStorage.setItem("fodase-theme",theme);
+  notify("Tema atualizado: "+theme);
+}
+
+const savedTheme = localStorage.getItem("fodase-theme");
+if(savedTheme) setTheme(savedTheme);
+
+function reboot() {
+  document.querySelectorAll(".window").forEach(w=>w.remove());
+  document.getElementById("startMenu").style.display="none";
+  bootSystem();
+}
+</script>
+</body>
+</html>
